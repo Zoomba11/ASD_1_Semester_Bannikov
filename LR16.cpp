@@ -1,251 +1,117 @@
-﻿#include <iostream>
-#include <stack>
-#include <string>
+﻿// НЕрекурсивный прямой обход 
+
+#include <iostream>
 #include <vector>
-class Tree
+#include <string>
+
+struct BinaryNode
 {
-    public:
     int value;
-    Tree* parent;
-    Tree* left;
-    Tree* right;
-    std::string string; // äëÿ ëèíåéíî-ñêîáî÷íîé çàïèñè.
-    Tree(const int v, Tree* p)
+
+    BinaryNode* left = nullptr;
+    BinaryNode* right = nullptr;
+
+    BinaryNode(std::string& s)
     {
-        value = v;
-        parent = p;
+        value = getValue(s);
+        s.erase(0, digits(value));
+        if (s[0] == '(')
+            s = unbracket(s);
+        else
+            return;
+
+        //первый элемент - число? создаю узел! 
+        if (isDigit(s[0]))
+            left = new BinaryNode(s);
+        if (s[0] == ',' && isDigit(s[1]))
+            right = new BinaryNode(s.erase(0, 1));
     }
 
-Tree()
-    {
 
-}
-
-Tree(std::string str)
+    private:
+	//число или скобка? 
+	bool isDigit(char c)
     {
-    string = str;
-}
+        return c >= '0' && c <= '9';
+    }
 
-void add(const int v)
-{
-    if (v > value)
-    {
-        if (right == nullptr)
+    int digits(int n)
+    {   
+        if (n)
         {
-            right = new Tree(v, this);
+            n = floor(log10(n) + 1);
+            return n;
         }
         else
-        {
-            right->add(v);
-        }
+            return 1;
     }
-    else
+
+    int getValue(std::string& s)
     {
-        if (left == nullptr)
-        {
-            left = new Tree(v, this);
-        }
-        else
-        {
-            left->add(v);
-        }
+        //размерность строки: 16
+        int n = s.size();
+        int i = 1;
+        while (i < n)
+            if (!isDigit(s[i++]))
+                break;
+
+        return std::stoi(s.substr(0, i));
     }
-}
 
+    //удаляю скобки 
+    std::string unbracket(std::string s)
+    {
+        for (int i = 1, d = 1; i < s.size(); i++, d += (s[i] == '(') - (s[i] == ')'))
+            if (!d)
+                return s.erase(0, 1).erase(i - 1, 1);
+        return s;
+    }
+};
 
-std::string toString(int value) // ïåðåâîäèò ÷èñëî â ñòðîêó
+//реализую бинарное дерево
+class BinaryTree
 {
-    std::string result;
+    BinaryNode* root = nullptr;
 
-    if (value > 9)
-    {
-        result += char(value / 10 + 48);
-        result += char(value % 10 + 48);
-    }
-    else
-    {
-        result += char(value + 48);
-    }
+    //заполняю дерево
+    void print(const std::string& p, const BinaryNode* n, bool l)
+	{
+		if (!n) return;
+		std::cout << p << (l? "|--" : "|--") << n->value << "\n";
+		print(p + (l? "|   " : "    "), n->left, 1);
+		print(p + (l? "|   " : "    "), n->right, 0);
+	}
 
-    return result;
-}
+public:
+	BinaryTree(std::string s) : root(new BinaryNode(s)) { }
 
+void print() { print("", root, 0); };
 
-void print(Tree* tree) // ïåðåâîäèò äåðåâî â ëèíåéíî-ñêîáî÷óíþ çàïèñü
+//реализую нерекурсивный обход
+void NonRecursive()
 {
-    string += toString(tree->value);
-    if (tree->left != nullptr || tree->right != nullptr)
+    //в stack помещен корень дерева
+    std::vector<BinaryNode*> stack = { root };
+    while (!stack.empty())
     {
-        string += '(';
-        if (tree->left != nullptr)
-        {
-            print(tree->left);
-        }
-        string += ',';
-        if (tree->right != nullptr)
-        {
-            print(tree->right);
-        }
-        string += ')';
+        BinaryNode* n = stack.back();
+        stack.pop_back();
+        std::cout << n->value << " ";
+        if (n->right)
+            stack.push_back(n->right);
+        if (n->left)
+            stack.push_back(n->left);
     }
-
-}
-
-
-void Print()
-{
-    print(this);
-}
-
-
-bool isDigital(const char elem)
-{
-    return (elem >= '0' && elem <= '9') ? true : false;
-}
-
-
-Tree parse(std::string str) // ïàðñèò  ñòðîêó â áèíàðíîå äåðåâî
-{
-    Tree result;
-    int index;
-    if (isDigital(str[0]) && isDigital(str[1]))
-    {
-        int val = (str[0] - 48) * 10 + str[1] - 48;
-        result.value = val;
-        index = 2;
-    }
-    else if (isDigital(str[0]) && !isDigital(str[1]))
-    {
-        int val = str[0] - 48;
-        result.value = val;
-        index = 1;
-    }
-
-
-    for (int i = index; i < str.size() - 1;)
-    {
-        if (isDigital(str[i]) && isDigital(str[i + 1]))
-        {
-            int value = (str[i] - 48) * 10 + str[i + 1] - 48;
-            result.add(value);
-            i += 2;
-        }
-        else if (isDigital(str[i]) && !isDigital(str[i + 1]))
-        {
-            int value = str[i] - 48;
-            result.add(value);
-            i++;
-        }
-        else
-        {
-            i++;
-        }
-    }
-
-    return result;
+    std::cout << "\n";
 }
 };
-void direct(std::vector<int>& v, Tree* tree)
+
+int main()
 {
-    std::stack<Tree*> s;
-    s.push(nullptr);
-    Tree* tempTree = tree;
-    do
-    {
-        if (tempTree != nullptr)
-        {
-            s.push(tempTree);
-            v.push_back(tempTree->value);
-            tempTree = tempTree->left;
-        }
-        else
-        {
-            if (s.top() == nullptr)
-            {
-                break;
-            }
-            tempTree = s.top();
-            s.pop();
-            tempTree = tempTree->right;
-        }
-    } while (true);
-}
-
-void center(std::vector<int>& v, Tree* tree)
-{
-    std::stack<Tree*> s;
-    s.push(nullptr);
-    Tree* tempTree = tree;
-    do
-    {
-        if (tempTree != nullptr)
-        {
-            s.push(tempTree);
-            tempTree = tempTree->left;
-        }
-        else
-        {
-            if (s.top() == nullptr)
-            {
-                break;
-            }
-            tempTree = s.top();
-            s.pop();
-            v.push_back(tempTree->value);
-            tempTree = tempTree->right;
-        }
-    } while (true);
-}
-
-void reverse(std::vector<int>& v, Tree* tree)
-{
-    std::stack<Tree*> s;
-    Tree* lastVisited = nullptr;
-    Tree* tempTree = tree;
-    while (!s.empty() || tempTree != nullptr)
-    {
-        if (tempTree != nullptr)
-        {
-            s.push(tempTree);
-            tempTree = tempTree->left;
-        }
-        else
-        {
-            Tree* topTree = s.top();
-            if (topTree->right != nullptr && lastVisited != topTree->right)
-            {
-                tempTree = topTree->right;
-            }
-            else
-            {
-                v.push_back(topTree->value);
-                lastVisited = s.top();
-                s.pop();
-            }
-        }
-    }
-}
-
-
-void main()
-{
-
-    std::vector<int> directValues;
-    std::vector<int> centerValues;
-    std::vector<int> reverseValues;
-    int maxElem;
-    std::string str = "8(3(1,6(4,7)),10(,14(13,)))";
-    Tree tree;
-    tree = tree.parse(str);
-    Tree newTree = tree;
-    newTree.Print();
-
-    direct(directValues, &newTree); //ïðÿìîé îáõîä
-    center(centerValues, &newTree);
-    reverse(reverseValues, &newTree);
-
-    for (auto & value : reverseValues)
-    {
-    std::cout << value << "\t";
-}
+    //ввожу последовательность
+    BinaryTree tree("0(1(3,4),2(5,6))");
+//печатаю дерево
+tree.print();
+//вызываю функцию нерекурсивного обхода
+tree.NonRecursive();
 }
