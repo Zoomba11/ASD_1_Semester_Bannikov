@@ -1,200 +1,127 @@
-﻿#include <iostream>
-#include<string>
-#include <vector>
-class Tree
+﻿//прямой, центральный и концевой обходы
+
+#include <iostream>
+#include <string>
+
+struct BinaryNode
 {
-    public:
-	int value;
-    Tree* parent;
-    Tree* left;
-    Tree* right;
-    std::string string; // äëÿ ëèíåéíî-ñêîáî÷íîé çàïèñè.
-    Tree(const int v, Tree* p)
+    int value;
+
+    //и левый и правый пока равны nullptr
+    BinaryNode* left = nullptr;
+    BinaryNode* right = nullptr;
+
+    BinaryNode(std::string& s)
     {
-        value = v;
-        parent = p;
+        //получаю число
+        value = getValue(s);
+        s.erase(0, digits(value));
+        if (s[0] == '(')
+            s = unbracket(s);
+        else
+            return;
+
+        if (isDigit(s[0]))
+            left = new BinaryNode(s);
+        if (s[0] == ',' && isDigit(s[1]))
+            right = new BinaryNode(s.erase(0, 1));
     }
 
-Tree()
+    private:
+	//проверяю скобка передо мной или число 
+	bool isDigit(char c)
     {
+        return c >= '0' && c <= '9';
+    }
 
-}
-
-Tree(std::string str)
-    {
-    string = str;
-}
-
-void add(const int v)
-{
-    if (v > value)
-    {
-        if (right == nullptr)
+    int digits(int n)
+    {   
+        if (n)
         {
-            right = new Tree(v, this);
+            n = floor(log10(n) + 1);
+            return n;
         }
         else
-        {
-            right->add(v);
-        }
+            return 1;
     }
-    else
+
+    int getValue(std::string& s)
     {
-        if (left == nullptr)
-        {
-            left = new Tree(v, this);
-        }
-        else
-        {
-            left->add(v);
-        }
+        //размерность строки: 16
+        int n = s.size();
+        int i = 1;
+        while (i < n)
+            if (!isDigit(s[i++]))
+                break;
+
+        return std::stoi(s.substr(0, i));
     }
-}
 
-
-std::string toString(int value) // ïåðåâîäèò ÷èñëî â ñòðîêó
-{
-    std::string result;
-
-    if (value > 9)
+    std::string unbracket(std::string s)
     {
-        result += char(value / 10 + 48);
-        result += char(value % 10 + 48);
+        for (int i = 1, d = 1; i < s.size(); i++, d += (s[i] == '(') - (s[i] == ')'))
+            if (!d)
+                return s.erase(0, 1).erase(i - 1, 1);
+        return s;
     }
-    else
-    {
-        result += char(value + 48);
-    }
-
-    return result;
-}
-
-
-void print(Tree* tree) // ïåðåâîäèò äåðåâî â ëèíåéíî-ñêîáî÷óíþ çàïèñü
-{
-    string += toString(tree->value);
-    if (tree->left != nullptr || tree->right != nullptr)
-    {
-        string += '(';
-        if (tree->left != nullptr)
-        {
-            print(tree->left);
-        }
-        string += ',';
-        if (tree->right != nullptr)
-        {
-            print(tree->right);
-        }
-        string += ')';
-    }
-
-}
-
-
-void Print()
-{
-    print(this);
-}
-
-
-bool isDigital(const char elem)
-{
-    return (elem >= '0' && elem <= '9') ? true : false;
-}
-
-
-Tree parse(std::string str) // ïàðñèò  ñòðîêó â áèíàðíîå äåðåâî
-{
-    Tree result;
-    int index;
-    if (isDigital(str[0]) && isDigital(str[1]))
-    {
-        int val = (str[0] - 48) * 10 + str[1] - 48;
-        result.value = val;
-        index = 2;
-    }
-    else if (isDigital(str[0]) && !isDigital(str[1]))
-    {
-        int val = str[0] - 48;
-        result.value = val;
-        index = 1;
-    }
-
-
-    for (int i = index; i < str.size() - 1;)
-    {
-        if (isDigital(str[i]) && isDigital(str[i + 1]))
-        {
-            int value = (str[i] - 48) * 10 + str[i + 1] - 48;
-            result.add(value);
-            i += 2;
-        }
-        else if (isDigital(str[i]) && !isDigital(str[i + 1]))
-        {
-            int value = str[i] - 48;
-            result.add(value);
-            i++;
-        }
-        else
-        {
-            i++;
-        }
-    }
-
-    return result;
-}
 };
 
-
-void direct(std::vector<int>& v, const Tree* tree)
+//реализую бинарное дерево
+class BinaryTree
 {
-    if (tree != nullptr)
-    {
-        v.push_back(tree->value);
-        direct(v, tree->left);
-        direct(v, tree->right);
-    }
-}
+    //объявляю ему корень
+    BinaryNode* root = nullptr;
 
-void center(std::vector<int>& v, const Tree* tree)
+    //заполняю дерево
+    void printBT(const std::string& p, const BinaryNode* n, bool l) 
+	{
+		if (n == nullptr) return;
+		std::cout << p << (l? "|--" : "|--") << n->value << "\n";
+		printBT(p + (l? "|   " : "    "), n->left, 1);
+		printBT(p + (l? "|   " : "    "), n->right, 0);
+	}
+
+public:
+	BinaryTree(std::string s) : root(new BinaryNode(s)) { }
+
+void print() { printBT("", root, 0); };
+
+void directTraverse(BinaryNode* n)    //прямой (1)
 {
-    if (tree != nullptr)
-    {
-        center(v, tree->left);
-        v.push_back(tree->value);
-        center(v, tree->right);
-    }
+    if (!n) return;
+    std::cout << n->value << " ";
+    directTraverse(n->left);
+    directTraverse(n->right);
 }
 
-void reverse(std::vector<int>& v, const Tree* tree)
+void directTraverse() { directTraverse(root); std::cout << "\n"; }
+
+void symTraverse(BinaryNode* n)       //центральный (2)
 {
-    if (tree != nullptr)
-    {
-        reverse(v, tree->left);
-        reverse(v, tree->right);
-        v.push_back(tree->value);
-    }
+    if (!n) return;
+    symTraverse(n->left);
+    std::cout << n->value << " ";
+    symTraverse(n->right);
 }
+void symTraverse() { symTraverse(root); std::cout << "\n"; }
 
-
-void main()
+void inverseTraverse(BinaryNode* n)    //концевой (3)
 {
-    std::vector<int> directValues;
-    std::vector<int> centerValues;
-    std::vector<int> reverseValues;
-    int maxElem;
-    std::string str = "8(3(1,6(4,7)),10(,14(13,)))";
-    Tree tree;
-    tree = tree.parse(str);
-    Tree newTree = tree;
-    newTree.Print();
-
-    direct(directValues, &newTree); //ïðÿìîé îáõîä
-    center(centerValues, &newTree); //êîëüöåâîé îáõîä
-    reverse(reverseValues, &newTree); //îáðàòíûé îáõîä
-
-    for (auto & value : reverseValues)
-    {
-    std::cout << value << "\t";
+    if (!n) return;
+    inverseTraverse(n->left);
+    inverseTraverse(n->right);
+    std::cout << n->value << " ";
 }
+void inverseTraverse() { inverseTraverse(root); std::cout << "\n"; }
+};
+
+int main()
+{
+    //ввожу последовательность 
+    BinaryTree tree("0(1(3,4),2(5,6))");
+tree.print();
+tree.directTraverse();  //(1)
+tree.symTraverse();     //(2)
+tree.inverseTraverse(); //(3)
 }
+
